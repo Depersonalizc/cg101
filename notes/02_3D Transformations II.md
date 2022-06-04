@@ -33,7 +33,32 @@ $$
 \begin{aligned}
 \mathcal M(\b v) &= \b T\b v+\b t  & \text{for vertex }\b v
 \\
-\mathcal M(\b d) &= \b T\hat{\b d}   &\text{for direction }\hat{\b d}
+\mathcal M(\hat {\b n}) &= \b T\hat{\b n}   &\text{for normal }\hat{\b n}
+
+\end{aligned}
+$$
+... Right? Sadly NO. The matrix $\b M$ works perfectly fine at transforming the vertices. However, it fails to keep the normals perpendicular to the faces after transformation. Consider a face $F$ and two arbitrary points $\b u,\b v$ on it. The defining property of the surface normal $\hat {\b n}$ is that $\hat {\b n}^\top(\b u-\b v)=0$. After the transformation we wish the new normal vector $\hat {\b n}'$ still be perpendicular to the transformed face $F'$.
+
+<img src="C:\Users\chen1\AppData\Roaming\Typora\typora-user-images\image-20220605030524110.png" alt="image-20220605030524110" style="zoom:33%;" />
+
+In other words,
+$$
+\begin{aligned}
+(\hat {\b n}')^{^\top}(\mathcal M(\b u)-\mathcal M(\b v))=0\\
+(\hat {\b n}')^{^\top}\b T(\b u-\b v)=0
+
+\end{aligned}
+$$
+It is not too hard to see that $\hat {\b n}'=\b T^{-\top}\hat {\b n}$ is the solution, since
+$$
+(\b T^{-\top}\hat {\b n})^{^\top}\b T(\b u-\b v)=\hat {\b n}^\top\b T^{-1}\b T(\b u-\b v)=0
+$$
+So the correct transformation is actually
+$$
+\begin{aligned}
+\mathcal M(\b v) &= \b T\b v+\b t  & \text{for vertex }\b v
+\\
+\mathcal M(\hat {\b n}) &= \b T^{-\top}\hat{\b n}   &\text{for normal }\hat{\b n}
 
 \end{aligned}
 $$
@@ -50,11 +75,13 @@ $$
 
 \end{array}\right]\right\}
 $$
-The coordinates system after applying model transform is called the *world space coordinates*.
+The coordinates system after applying the model transform is called the *world space coordinates*.
 
 ### Camera (View) transformation
 
-With Ted and his friends ready, time to take out the camera. The camera or view transform $\mathcal C$, as the name suggests, effectively "puts the camera at a nice angle". To fully determine a camera's orientation in space three parameters are needed:
+With Ted and his friends ready, time to take out the camera. 
+
+The camera or view transformation $\mathcal C$, as the name suggests, effectively puts our virtual camera at a nice angle. To fully determine the camera's orientation in space three parameters are needed:
 
 - Position $\b e$  (Where is the camera?)
 - Look-at / gaze direction $\hat {\b g}$  (Which direction is the camera pointing to?)
@@ -116,15 +143,21 @@ $$
 \b 0^\top & 1
 \end{array}\right]
 $$
-which encodes the transform
+This time we do not have to worry about treating the normals separately. Since $\b Q$ is orthogonal,
+$$
+{(\b Q^{\top})}^{-\top}=\b Q^{-1}=\b Q^{\top}
+$$
+So the camera transform is simply
 $$
 \begin{aligned}
 \mathcal C(\b v) &= \b Q^\top(\b v-\b e)  & \text{for vertex }\b v
 \\
-\mathcal C(\b d) &= \b Q^\top\hat{\b d}   &\text{for direction }\hat{\b d}
+\mathcal C(\b d) &= \b Q^\top\hat{\b n}   &\text{for normal }\hat{\b n}
 
 \end{aligned}
 $$
+which can be performed with a single matrix $\b C$.
+
 The coordinates system after applying model and camera transforms is called the *camera space coordinates*.
 
 ### Projection transformation
