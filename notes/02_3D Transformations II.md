@@ -10,7 +10,7 @@ A (geometric) model of an object can be stored in the computer as a list of 3D v
 2. **Camera (View)** transformation $\mathcal C$
 3. **Projection** transformation $\mathcal P$,
 
-i.e., $\mathcal V=\mathcal P\circ\mathcal C\circ\mathcal M$. To understand all these transforms, it helps conceptually to imagine a virtual camera that captures a scene. Say we want to take a photo of a toy Teddy Bear. What we have to do are the following:
+in that $\mathcal V=\mathcal P\circ\mathcal C\circ\mathcal M$. To understand all these transforms, it helps conceptually to imagine a virtual camera that captures a scene. Say we want to take a photo of a toy Teddy Bear. What we have to do are the following:
 
 1. Place Ted in a nice spot and pose (say close to the window, rotated a bit so his left body is lit by the Sun)
 2. Pick a right place and angle for the camera (say pointing straight to Ted in a full body portrait)
@@ -115,6 +115,15 @@ $$
 \b Q^\top & -\b Q^\top \b e\\
 \b 0^\top & 1
 \end{array}\right]
+$$
+which encodes the transform
+$$
+\begin{aligned}
+\mathcal C(\b v) &= \b Q^\top(\b v-\b e)  & \text{for vertex }\b v
+\\
+\mathcal C(\b d) &= \b Q^\top\hat{\b d}   &\text{for direction }\hat{\b d}
+
+\end{aligned}
 $$
 The coordinates system after applying model and camera transforms is called the *camera space coordinates*.
 

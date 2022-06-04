@@ -106,7 +106,7 @@ $$
 
   - **About an arbitrary axis $\hat{\b n}$ by $\theta$ (Rodrigues' Formula)**
 
-    <img src="https://drive.google.com/uc?id=12qQsXPkZO9hAvXaWxPVxoFpjDTYWUJuo" alt="image-20220531190132779" style="zoom:33%;" /> ***Fig***: Rotation on $\b v$ about (unit) vector $\hat{\b n}$
+    <img src="C:\Users\chen1\AppData\Roaming\Typora\typora-user-images\image-20220605021819086.png" alt="image-20220605021819086" style="zoom: 40%;" /> ***Fig***: Rotation on $\b v$ about (unit) vector $\hat{\b n}$
 
     A rotation on $\b v$ about an arbitrary axis $\hat{\b n}$ can be decomposed into two steps:
 
