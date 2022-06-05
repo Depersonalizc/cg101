@@ -158,7 +158,7 @@ $$
 $$
 which can be performed with a single matrix $\b C$.
 
-The coordinates system after applying model and camera transforms is called the *camera space coordinates*.
+The coordinates system after applying model and camera transforms is called the *camera (view) space coordinates*.
 
 ### Projection transformation
 
@@ -287,7 +287,7 @@ The coordinates system after applying the model, camera, and projection transfor
 
 *Note*: In some graphics API's like OpenGL, the NDC system is defined to be left-handed (camera pointing to $\hat{\b z}$ instead of $-\hat{\b z}$) so that a larger $z$ coordinate in NDC corresponds to greater depth from the camera. To get this type of projection matrix, simply negate the boxed elements in $(\ref {proj})$.
 
-Finally, if we assume face $N$ to be symmetric about the $z$ axis, i.e., $l+r=t+b=0$, $(\ref{proj})$ gets simplified to
+Finally, if we assume face $N$ to be symmetric about the $z$ axis, i.e., $l+r=t+b=0$, Eq. $(\ref{proj})$ gets simplified to
 $$
 \b P = \b A\b S
 =\left[\begin{array}{ccc}
