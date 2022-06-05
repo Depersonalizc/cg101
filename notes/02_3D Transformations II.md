@@ -166,9 +166,9 @@ The (perspective) projection transformation $\mathcal P$ "squishes", translates 
 
 Denote the rectangular face of the frustum closer to the camera by $N$ and the father one $F$. The frustum, and thus transform $\mathcal P$, can be determined by the following parameters:
 
-| Parameter | $n$ (near) | $f$ (far) | $t$ (top)  | $b$ (bottom) | $r$ (right) | $l$ (left) |
-| --------- | ---------- | --------- | ---------- | ------------ | ----------- | ---------- |
-| means...  | $-N_z$     | $-F_z$    | $\max N_y$ | $\min N_y$   | $\max N_x$  | $\min N_x$ |
+| Parameter | $n$ (near, $\gt 0$) | $f$ (far, $\gt 0$) | $t$ (top)  | $b$ (bottom) | $r$ (right) | $l$ (left) |
+| --------- | ------------------- | ------------------ | ---------- | ------------ | ----------- | ---------- |
+| means...  | $-N_z$              | $-F_z$             | $\max N_y$ | $\min N_y$   | $\max N_x$  | $\min N_x$ |
 
 <img src="C:\Users\chen1\AppData\Roaming\Typora\typora-user-images\image-20220604032511065.png" alt="image-20220604032511065" style="zoom:33%;" />
 
@@ -287,6 +287,19 @@ The coordinates system after applying the model, camera, and projection transfor
 
 *Note*: In some graphics API's like OpenGL, the NDC system is defined to be left-handed (camera pointing to $\hat{\b z}$ instead of $-\hat{\b z}$) so that a larger $z$ coordinate in NDC corresponds to greater depth from the camera. To get this type of projection matrix, simply negate the boxed elements in $(\ref {proj})$.
 
+Finally, if we assume face $N$ to be symmetric about the $z$ axis, i.e., $l+r=t+b=0$, $(\ref{proj})$ gets simplified to
+$$
+\b P = \b A\b S
+=\left[\begin{array}{ccc}
+\frac{-n}{r}&0&0&0
+\\
+0&\frac{-n}{t}&0&0
+\\
+0&0&{\frac{n+f}{n-f}}&\frac{2nf}{n-f}
+\\
+0&0&{1}&0
+\end{array}\right]
+$$
 
 
 ### References
