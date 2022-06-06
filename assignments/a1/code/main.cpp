@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
                 axis[1] = std::stof(std::string(strtok(NULL, " ")));
                 axis[2] = std::stof(std::string(strtok(NULL, " ")));
                 break;
-            case 'd':  // rotation angle, in radius
+            case 'd':  // rotation angle, in degrees
                 rot_deg = std::stof(std::string(optarg));
                 break;
         }
@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
         image.convertTo(image, CV_8UC3, 1.0f);
 
         cv::imwrite(filename, image);
-        
+
         std::cout << "Output to: " << filename << std::endl;
 
         return 0;
