@@ -4,7 +4,7 @@ Previously, we have discussed linear and affine transformations in $\R^3$ and th
 
 ### 3D viewing
 
-A (geometric) model of an object can be stored in the computer as a list of 3D vertices $\b V =\{\b v_i\}$, faces as groupings of vertices, and face normals $\b N=\{\hat{\b n}_j\}$ specifying the normal direction of each face. On a high level, viewing is a transformation $\mathcal V:\R^3\to \R^3$ that maps $\b V$ and $\b N$ to a "canonical" space named normalized device coordinates (NDC). The viewing transformation can be written as a composition of
+A (geometric) model of an object can be stored in the computer as a list of 3D vertices $\b V =\{\b v_i\}$, faces as groupings of vertices, and face normals $\b N=\{\hat{\b n}_j\}$ specifying the normal direction of each face. On a high level, viewing is a transformation $\mathcal V:\R^3\to \R^3$ that bijectively maps $\b V$ and $\b N$ to a "canonical" space named the normalized device coordinates (NDC). The viewing transformation can be written as a composition of
 
 1. **Model** transformation $\mathcal M$
 2. **Camera (View)** transformation $\mathcal C$
@@ -37,9 +37,9 @@ $$
 
 \end{aligned}
 $$
-... Right? Sadly NO. The matrix $\b M$ works perfectly fine at transforming the vertices. However, it fails to keep the normals perpendicular to the faces after transformation. Consider a face $F$ and two arbitrary points $\b u,\b v$ on it. The defining property of the surface normal $\hat {\b n}$ is that $\hat {\b n}^\top(\b u-\b v)=0$. After the transformation we wish the new normal vector $\hat {\b n}'$ still be perpendicular to the transformed face $F'$.
+... Right? **Sadly NO**. The matrix $\b M$ works wonderfully at transforming the vertices. However, it fails to keep the normals perpendicular to the faces after transformation. To see this, consider a face $F$ and any two distinct points $\b u,\b v$ on it. The defining property of the surface normal $\hat {\b n}$ is that $\hat {\b n}^\top(\b u-\b v)=0$. After the transformation we wish the new normal vector $\hat {\b n}'$ still be perpendicular to the transformed face $F'$.
 
-<img src="C:\Users\chen1\AppData\Roaming\Typora\typora-user-images\image-20220605030524110.png" alt="image-20220605030524110" style="zoom:33%;" />
+<img src="assets/02_3D Transformations II/model_normal.png" style="zoom:33%;" />
 
 In other words,
 $$
@@ -62,7 +62,7 @@ $$
 
 \end{aligned}
 $$
-Now suppose Ted feels a bit lonely and wants his buddy John in the photo next to him. We can use another model transformation $\mathcal M'$ to transform John's vertices and normals to where Ted wants him to be. In general, each model in a scene has its own model transform that mapping the vertices in its local coordinates to a shared, world coordinate space.
+Now, suppose Ted feels a bit lonely and wants his buddy John in the photo next to him. We can use another model transformation $\mathcal M'$ to transform John's vertices and normals to where Ted wants him to be. In general, each model in a scene has its own model transform that mapping the vertices in its local coordinates to a shared, world coordinate space.
 $$
 \left\{
 \b M^{(1)}=\left[\begin{array}{c|c}
@@ -79,12 +79,12 @@ The coordinates system after applying the model transform is called the *world s
 
 ### Camera (View) transformation
 
-With Ted and his friends ready, time to take out the camera. 
+With Ted and his friends ready, time to take out our camera. 
 
-The camera or view transformation $\mathcal C$, as the name suggests, effectively puts our virtual camera at a nice angle. To fully determine the camera's orientation in space three parameters are needed:
+The camera (or view) transformation $\mathcal C$, as the name suggests, effectively puts our virtual camera at a nice angle. To fully determine the camera's orientation in space three parameters are needed:
 
-- Position $\b e$  (Where is the camera?)
-- Look-at / gaze direction $\hat {\b g}$  (Which direction is the camera pointing to?)
+- Position / "Eye" $\b e$  (Where is the camera?)
+- Look-at / Gaze direction $\hat {\b g}$  (Which direction is the camera pointing to?)
 - Up direction $\hat{\b t}$  (Which direction is the top of the camera pointing to?)
 
 The camera transformation is defined as the rigid transformation mapping the vectors
@@ -98,7 +98,7 @@ $$
 $$
 Equivalently, it can be understood as a change of coordinates from the $[\hat{\b x},\hat{\b y},\hat{\b z}]$ system to the new system $\b Q = [\hat{\b g}\times\hat{\b t},\hat{\b t},-\hat{\b g}]$ centered at $\b e$. In plain English, we want the camera to be located at the origin, looking at $-\hat{\b z}$, with its "up" direction aligned with $\hat{\b y}$.
 
-<img src="C:\Users\chen1\AppData\Roaming\Typora\typora-user-images\image-20220603221837105.png" alt="image-20220603221837105" style="zoom: 50%;" />
+<img src="assets/02_3D Transformations II/cam_tsfm.png" alt="cam_tsfm" style="zoom: 50%;" />
 
 Let's derive a matrix representation for $\mathcal C$. We first translate $\b e$ to $\b 0$ with
 $$
@@ -143,7 +143,7 @@ $$
 \b 0^\top & 1
 \end{array}\right]
 $$
-This time we do not have to worry about treating the normals separately. Since $\b Q$ is orthogonal,
+This time we don't have to worry about treating the normals separately. Since $\b Q$ is orthogonal,
 $$
 {(\b Q^{\top})}^{-\top}=\b Q^{-1}=\b Q^{\top}
 $$
@@ -158,11 +158,11 @@ $$
 $$
 which can be performed with a single matrix $\b C$.
 
-The coordinates system after applying model and camera transforms is called the *camera (view) space coordinates*.
+The coordinates system after applying model and camera transforms is called the *camera (or view) space coordinates*.
 
 ### Projection transformation
 
-The (perspective) projection transformation $\mathcal P$ "squishes", translates and scales a so-called the *view frustum* to the canonical cube $K=[-1,1]^3$. The view frustum is a right, rectangular frustum in front of the camera whose height is parallel to the $z$ axis of the camera space. 
+The (perspective) projection transformation $\mathcal P$ "squishes", then translates and scales a so-called the *view frustum* to the canonical cube $K=[-1,1]^3$. The view frustum is a right rectangular frustum in front of the camera whose two rectangular faces are perpendicular to the $z$ axis in the camera space. 
 
 Denote the rectangular face of the frustum closer to the camera by $N$ and the father one $F$. The frustum, and thus transform $\mathcal P$, can be determined by the following parameters:
 
@@ -170,16 +170,16 @@ Denote the rectangular face of the frustum closer to the camera by $N$ and the f
 | --------- | ------------------- | ------------------ | ---------- | ------------ | ----------- | ---------- |
 | means...  | $-N_z$              | $-F_z$             | $\max N_y$ | $\min N_y$   | $\max N_x$  | $\min N_x$ |
 
-<img src="C:\Users\chen1\AppData\Roaming\Typora\typora-user-images\image-20220604032511065.png" alt="image-20220604032511065" style="zoom:33%;" />
+<img src="assets/02_3D Transformations II/view_frustum.png" alt="view_frustum" style="zoom:33%;" />
 
-#### "Squishing"
+#### "Squishing" the frustum
 
-Let's assume the squishing transform $\mathcal S$ can be represented by a 4x4 matrix $\b S$. We shall derive what $\b S$ should be. We wish to map the view frustum to the cuboid $C=[l,r]\times [b,t]\times[-f,-n]$. Additionally, we require the transform $\mathcal S$ to
+Let's assume the "squishing" transform $\mathcal S$ that maps the view frustum to the cuboid $C=[l,r]\times [b,t]\times[-f,-n]$ can be represented by a 4x4 matrix $\b S$. We shall derive a formula for $\b S$ by requiring the transform $\mathcal S$ to
 
-- scale the $x$ and $y$ coordinates of each points so that every cross section of the frustum after transformation has the same dimension as $N$, and
+- scale the $x$ and $y$ coordinates of the points on each (rectangular) cross section of the frustum, so that all cross sections have the same dimension as $N$ after the transformation, and
 - keep the $z$ coordinates of the near and far planes unchanged.
 
-<img src="C:\Users\chen1\AppData\Roaming\Typora\typora-user-images\image-20220604042034369.png" alt="image-20220604042034369" style="zoom:33%;" />
+<img src="assets/02_3D Transformations II/squish_sim.png" alt="squish_sim" style="zoom:33%;" />
 
 By inspecting two sets of similar triangles above, we know $\mathcal S$ should scale each $x$-$y$ plane uniformly by a factor $-n/z$ where $z$ is the $z$ coordinate of the plane. That is,
 $$
@@ -210,7 +210,7 @@ $$
 where $a,b,c,d$ are unknown. To find out these unknowns, observe that after squishing
 
 1. The entire near plane remains unchanged
-2. The intersection point on the far plane $(0, 0, -f)$ remains unchanged
+2. The intersection point on the far plane $(0, 0, -f)$ remains still
 
 The first condition implies that
 $$
@@ -240,7 +240,7 @@ $$
 $$
 Hence $d-cf=f^2$. Solving the above system yields
 $$
-{a=b=0\\c=-(n+f),d=-nf}
+\begin{aligned}a&=b=0\\-c&=n+f\\-d&=nf\end{aligned}
 \implies
 \b S =\left[\begin{array}{ccc}
 -n&0&0&0
@@ -255,7 +255,7 @@ $$
 
 #### Translation & Scaling
 
-Now that the frustum has been squished to the cuboid $C$, all there's left to do is map the cuboid to the canonical cube $K$. This is straightforward to accomplish. First, translate the center of the cuboid $(\frac{l+r}{2},\frac{t+b}{2},-\frac{f+n}{2})$ to the origin. Then stretch along each axis (respectively by $\frac{2}{r-l},\frac{2}{t-b},\frac{2}{f-n}$) so that all side-lengths of the cuboid become $2$. The overall transform is given by the matrix
+Now that the frustum has been squished to the cuboid $C$, all there's left to do is map the cuboid to the canonical cube $K$. This is rather straightforward to accomplish: First, translate the center of the cuboid $(\frac{l+r}{2},\frac{t+b}{2},-\frac{f+n}{2})$ to the origin. Then stretch along each axis (respectively by $\frac{2}{r-l},\frac{2}{t-b},\frac{2}{f-n}$) so that all side-lengths of the cuboid become $2$. The overall transform is given by the matrix
 $$
 \b A =\left[\begin{array}{ccc}
 \frac{2}{r-l}&0&0&\frac{l+r}{l-r}
@@ -278,18 +278,18 @@ $$
 \\
 0&\frac{-2n}{t-b}&\frac{b+t}{b-t}&0
 \\
-0&0&\boxed{\frac{n+f}{n-f}}&\frac{2nf}{n-f}
+0&0&\color{blue}{\frac{n+f}{n-f}}&\frac{2nf}{n-f}
 \\
-0&0&\boxed{1}&0
+0&0&\color{blue}{1}&0
 \end{array}\right]\label {proj}
 $$
 The coordinates system after applying the model, camera, and projection transformations is called the *normalized device coordinates* (NDC).
 
-*Note*: In some graphics API's like OpenGL, the NDC system is defined to be left-handed (camera pointing to $\hat{\b z}$ instead of $-\hat{\b z}$) so that a larger $z$ coordinate in NDC corresponds to greater depth from the camera. To get this type of projection matrix, simply negate the boxed elements in $(\ref {proj})$.
+*Note*: In some graphics API's like OpenGL, the NDC system is defined to be left-handed (camera pointing to $\hat{\b z}$ instead of $-\hat{\b z}$) so that a larger $z$ coordinate in NDC corresponds to greater depth from the camera. To get this type of projection matrix, simply negate the blue elements in $(\ref {proj})$.
 
-Finally, if we assume face $N$ to be symmetric about the $z$ axis, i.e., $l+r=t+b=0$, Eq. $(\ref{proj})$ gets simplified to
+Finally, if we assume face $N$ to be symmetric about the $z$ axis, i.e., $l+r=t+b=0$, Eq. $(\ref{proj})$ simplifies to
 $$
-\b P = \b A\b S
+^{\text{sym}}\b P = \b A\b S
 =\left[\begin{array}{ccc}
 \frac{-n}{r}&0&0&0
 \\
@@ -300,6 +300,37 @@ $$
 0&0&{1}&0
 \end{array}\right]
 $$
+
+#### Effects of projection on depth
+
+Let's examine matrix $\b P$'s effects on the $z$-value of the points between the near/far planes:
+$$
+z'=
+\frac1z\left[\begin{array}{c} \frac{n+f}{n-f}&\frac{2nf}{n-f} \end{array}\right]\left[\begin{array}{c} z\\1 \end{array}\right]=\frac{1}{n-f}\left(\frac{2nf}{z} + n+f\right)
+$$
+<img src="assets/02_3D Transformations II/ndc_z.png" style="zoom: 33%;" />
+
+Observe from the graph that all cross sections of the view frustum, except for the near and far planes, get pushed further away from the camera by projection transformation than they would have by scaling only. Also observe that as $z\to-f$, the "squishification" effect of the projection becomes increasingly severe. In fact, imagine letting $f$ approach $\infty$. Then the graph above becomes essentially a horizontal straight line to the left in the limit. The limiting transformation matrix $^{\infty}\b P$ can be constructed by finding the limit of $(\ref{proj})$ as $f\to \infty$:
+$$
+\begin{alignedat}{2}
+\b P_{3,3}&=\frac{n+f}{n-f}\to\ \ {-1} & = {^{\infty}\b P_{3,3}}\\
+\b P_{3,4}&=\frac{2nf}{n-f}\to-2n &\ = {^{\infty}\b P_{3,4}}
+
+\end{alignedat}\implies 
+
+^{\infty}\b P
+=\left[\begin{array}{ccc}
+\frac{-2n}{r-l}&0&\frac{l+r}{l-r}&0
+\\
+0&\frac{-2n}{t-b}&\frac{b+t}{b-t}&0
+\\
+0&0&{-1}&-2n
+\\
+0&0&{1}&0
+\end{array}\right]
+$$
+This projection transformation maps an infinitely long and deep frustum starting from the near plane to the canonical cube $K$.
+
 
 
 ### References
