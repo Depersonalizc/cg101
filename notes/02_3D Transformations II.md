@@ -278,16 +278,12 @@ $$
 \\
 0&\frac{-2n}{t-b}&\frac{b+t}{b-t}&0
 \\
-0&0&\color{blue}{\frac{n+f}{n-f}}&\frac{2nf}{n-f}
+0&0&\color{blue}{\frac{n+f}{n-f}}&\color{blue}\frac{2nf}{n-f}
 \\
-0&0&\color{blue}{1}&0
+0&0&{1}&0
 \end{array}\right]\label {proj}
 $$
-The coordinates system after applying the model, camera, and projection transformations is called the *normalized device coordinates* (NDC).
-
-*Note*: In some graphics API's like OpenGL, the NDC system is defined to be left-handed (camera pointing to $\hat{\b z}$ instead of $-\hat{\b z}$) so that a larger $z$ coordinate in NDC corresponds to greater depth from the camera. To get this type of projection matrix, simply negate the blue elements in $(\ref {proj})$.
-
-Finally, if we assume face $N$ to be symmetric about the $z$ axis, i.e., $l+r=t+b=0$, Eq. $(\ref{proj})$ simplifies to
+If we assume face $N$ to be symmetric about the $z$ axis, i.e., $l+r=t+b=0$, then Eq. $(\ref{proj})$ simplifies to
 $$
 ^{\text{sym}}\b P = \b A\b S
 =\left[\begin{array}{ccc}
@@ -295,11 +291,15 @@ $$
 \\
 0&\frac{-n}{t}&0&0
 \\
-0&0&{\frac{n+f}{n-f}}&\frac{2nf}{n-f}
+0&0&{\color{blue}\frac{n+f}{n-f}}&\color{blue}\frac{2nf}{n-f}
 \\
 0&0&{1}&0
-\end{array}\right]
+\end{array}\right]\label{sym}
 $$
+
+The coordinates system after applying the model, camera, and projection transformations is called the *normalized device coordinates* (NDC).
+
+*Note*: In some graphics API's like OpenGL, the NDC system is defined to be left-handed (camera pointing to $\hat{\b z}$ instead of $-\hat{\b z}$; the $x$ and $y$ components unchanged) so that a larger $z$-value in NDC corresponds to greater depth from the camera. To get this type of projection matrix, simply negate the blue elements in $(\ref {proj})$ or $(\ref{sym})$.
 
 #### Effects of projection on depth
 
@@ -329,6 +329,10 @@ $$
 0&0&{1}&0
 \end{array}\right]
 $$
+with
+$$
+z'=\frac{-z-2n}{z}=\frac{-2n}z-1
+$$
 This projection transformation maps an infinitely long and deep frustum starting from the near plane to the canonical cube $K$.
 
 
@@ -341,7 +345,7 @@ This projection transformation maps an infinitely long and deep frustum starting
 
 ---
 
-**Next:** Rasterization
+**Next:** Rasterization (I)
 
 *To be continued.*
 

@@ -28,17 +28,20 @@ void Triangle::setNormal(int ind, Vector3f n){
     normal[ind] = n;
 }
 void Triangle::setColor(int ind, float r, float g, float b) {
-    if((r<0.0) || (r>255.) ||
-       (g<0.0) || (g>255.) ||
-       (b<0.0) || (b>255.)) {
+    auto rgb = Vector3f(r, g, b);
+    setColor(ind, rgb);
+}
+void Triangle::setColor(int ind, Vector3f rgb) {
+    if((rgb.x()<0.0) || (rgb.x()>255.) ||
+       (rgb.y()<0.0) || (rgb.y()>255.) ||
+       (rgb.z()<0.0) || (rgb.z()>255.)) {
         fprintf(stderr, "ERROR! Invalid color values");
         fflush(stderr);
         exit(-1);
     }
-
-    color[ind] = Vector3f((float)r/255.,(float)g/255.,(float)b/255.);
-    return;
+    color[ind] = rgb;
 }
+
 void Triangle::setTexCoord(int ind, float s, float t) {
     tex_coords[ind] = Vector2f(s,t);
 }
@@ -46,6 +49,9 @@ void Triangle::setTexCoord(int ind, float s, float t) {
 std::array<Vector4f, 3> Triangle::toVector4() const
 {
     std::array<Eigen::Vector4f, 3> res;
-    std::transform(std::begin(v), std::end(v), res.begin(), [](auto& vec) { return Eigen::Vector4f(vec.x(), vec.y(), vec.z(), 1.f); });
+    std::transform(
+        std::begin(v), std::end(v), res.begin(),
+        [](auto & vec) { return Eigen::Vector4f(vec.x(), vec.y(), vec.z(), 1.f); }
+    );
     return res;
 }

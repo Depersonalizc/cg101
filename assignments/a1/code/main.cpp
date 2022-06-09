@@ -20,9 +20,9 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
 
     Eigen::Matrix4f translate;
-    translate << 1, 0, 0, -eye_pos[0], \
-                 0, 1, 0, -eye_pos[1], \
-                 0, 0, 1, -eye_pos[2], \
+    translate << 1, 0, 0, -eye_pos[0],
+                 0, 1, 0, -eye_pos[1],
+                 0, 0, 1, -eye_pos[2],
                  0, 0, 0, 1;
 
     view = translate * view;
@@ -41,8 +41,8 @@ Eigen::Matrix4f get_model_matrix(Eigen::Vector3f axis, float rot_deg)
     Eigen::Matrix3f N;
 
     axis.normalize();
-    N << 0, -axis.z(), axis.y(), \
-         axis.z(), 0, -axis.x(), \
+    N << 0, -axis.z(), axis.y(),
+         axis.z(), 0, -axis.x(),
          -axis.y(), axis.x(), 0; // Cross product
 
     auto rad = deg2rad(rot_deg);
@@ -78,9 +78,9 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     auto p33 = (near + far) / (near - far);
     auto p34 = 2 * near*far / (near - far);
 
-    projection << p11, 0,   0,   0,   \
-                  0,   p22, 0,   0,   \
-                  0,   0,   p33, p34, \
+    projection << p11, 0,   0,   0,
+                  0,   p22, 0,   0,
+                  0,   0,   p33, p34,
                   0,   0,   1,   0;
 
     return projection;
@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
     std::string filename = "output.png";
 
     int opt;    
-    while ( (opt = getopt(argc, argv, "o::a:d:")) != -1) {
+    while ( (opt = getopt(argc, argv, "o::a:d:")) != -1 ) {
         switch (opt) {
             case 'o':  // output dir
                 write = true;
