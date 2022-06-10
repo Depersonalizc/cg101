@@ -57,7 +57,7 @@ namespace rst
     class rasterizer
     {
     public:
-        rasterizer(int w, int h);
+        rasterizer(int w, int h, int msaa_level = 1);
         pos_buf_id load_positions(const std::vector<Eigen::Vector3f>& positions);
         ind_buf_id load_indices(const std::vector<Eigen::Vector3i>& indices);
         col_buf_id load_colors(const std::vector<Eigen::Vector3f>& colors);
@@ -67,9 +67,14 @@ namespace rst
         void set_projection(const Eigen::Matrix4f& p);
 
         void set_pixel(const Eigen::Vector3f& point, const Eigen::Vector3f& color);
-        void set_pixel(int x, int y, const Eigen::Vector3f& color);
-        bool set_depth(const Eigen::Vector3f& point, float depth, bool compareZ = 1);
-        bool set_depth(int i, int j, float depth, bool compareZ = 1);
+        void set_pixel(int i, int j, const Eigen::Vector3f& color);
+        void set_subpixel(int i, int j, int k, const Eigen::Vector3f& color);
+        void set_pixel_MSAA();
+
+        bool set_depth(const Eigen::Vector3f& point, float depth, bool compareZ = 0);
+        bool set_depth(int i, int j, float depth, bool compareZ = 0);
+        bool set_subpixel_depth(int i, int j, int k, float depth, bool compareZ = 1);
+        void set_depth_MSAA();
 
         void clear(Buffers buff);
 
@@ -94,11 +99,16 @@ namespace rst
         std::map<int, std::vector<Eigen::Vector3f>> col_buf;
 
         std::vector<Eigen::Vector3f> frame_buf;
-
         std::vector<float> depth_buf;
+
+        std::vector<std::vector<Eigen::Vector3f>> MSAA_frame_buf;
+        std::vector<std::vector<float>> MSAA_depth_buf;
+
         int get_index(int x, int y);
 
         int width, height;
+        int area;  // width * height
+        int MSAA_level = 4;  // Take level^2 samples. 1 turns MSAA off
 
         int next_id = 0;
         int get_next_id() { return next_id++; }

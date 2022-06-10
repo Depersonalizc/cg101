@@ -70,7 +70,7 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
      * - position from buffer `buf` (indexed by `pos_buffer.pos_id`)
      * - color    from buffer `col` (indexed by `col_buffer.col_id`)
      * ...
-     * Then pack them in a `Triangle` primitive sent `rasterize_triangle`
+     * Then pack them in a `Triangle` primitive sent to `rasterize_triangle`
      */
 
     auto& buf = pos_buf[pos_buffer.pos_id];
@@ -91,9 +91,9 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
             /* Viewport transformation */
             v.x() = 0.5f * width  * (v.x() + 1.f);
             v.y() = 0.5f * height * (v.y() + 1.f);
-
+            
             // std::cout << v.z() << std::endl;
-
+            
             /* Convert z into range [0, 1] */
             v.z() = 0.5f * v.z() + 0.5f;
 
@@ -105,6 +105,11 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
         }
         rasterize_triangle(t);
     }
+
+    /* Transfer MSAA_buffers to drawing buffers */
+    set_pixel_MSAA();
+    set_depth_MSAA();
+
 }
 
 /* Screen space rasterization */
@@ -134,43 +139,54 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t)
 
     /* Iterate over pixels within bbox and determine 
      * whether current pixel is inside the triangle */
-    for (int i = (int)xmin; i < xmax; ++i) {
-        for (int j = (int)ymin; j < ymax; ++j) {
-            auto x = i + 0.5f;  // center x
-            auto y = j + 0.5f;  // center y
-            if (insideTriangle(x, y, t.v)) {
-                
-                /* If inside, barycentric-interpolate z value
-                 * of point (x, y, _) on triangle t. */
-                auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
+    float delta = 1.f / (MSAA_level + 1);
+    for (int i = (int)xmin; i <= (int)xmax; ++i) {
+        for (int j = (int)ymin; j <= (int)ymax; ++j) {
 
-                /* The two commented lines below are the general formulae for any w;
-                 * We already did the homogeneous division (w=1) so it gets simplier. */
-                // float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-                // float z_interp = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-                auto w_reciprocal = 1.0f / (alpha + beta + gamma);
-                auto z_interp = (
-                    alpha * t.v[0].z() +
-                    beta  * t.v[1].z() +
-                    gamma * t.v[2].z()
-                );
-                z_interp *= w_reciprocal;
+            /* Pixel indexed (i, j) from bottom-left */
+            // auto  pxColorBuf = Eigen::Vector3f(0, 0, 0);
+            // float pxDepthBuf = 0;
+            // int pxDepthCount = 0;
+            
+            /* Sample at LEVEL^2 subpixel locations */
+            int subidx = 0;
+            for (int u = 1; u <= MSAA_level; ++u) {
+                for (int v = 1; v <= MSAA_level; ++v) {
 
-                /* Update the zBuffer and set pixel to the color of the triangle,
-                 * if the sampled depth is smaller than the zBuffer value. */
-                auto new_depth = set_depth(i, j, z_interp, 1);
-                if (new_depth) {
-                    Eigen::Vector3f color_interp = (
-                        alpha * t.color[0] + 
-                        beta  * t.color[1] +
-                        gamma * t.color[2]
-                    );
-                    set_pixel(i, j, color_interp);  // FORNOW: no color interp
+                    auto x = i + u * delta;
+                    auto y = j + v * delta;
+
+                    if (insideTriangle(x, y, t.v)) {
+                        /* If inside, barycentric-interpolate z value
+                        * of point (x, y, _) on triangle t. */
+                        auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
+
+                        /* The two commented lines below are the general formulae for any w;
+                        * We already did the homogeneous division (w=1) so it gets simplier. */
+                        // float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+                        // float z_interp = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+                        // z_interp *= w_reciprocal;
+                        auto z_interp = (alpha * t.v[0].z() +
+                                         beta  * t.v[1].z() +
+                                         gamma * t.v[2].z() ) / (alpha + beta + gamma);
+                        auto newDepth = set_subpixel_depth(i, j, subidx, z_interp, 1);
+
+                        if (newDepth) {
+                            Eigen::Vector3f color_interp = (
+                                alpha * t.color[0] + 
+                                beta  * t.color[1] +
+                                gamma * t.color[2]
+                            );
+                            set_subpixel(i, j, subidx, color_interp);
+                        }
+                        ++subidx;
+                    }
+
                 }
-            }
-        }
-    }
+            } // subpixels done
 
+        }
+    } // pixels done
 }
 
 void rst::rasterizer::set_model(const Eigen::Matrix4f& m)
@@ -193,17 +209,36 @@ void rst::rasterizer::clear(rst::Buffers buff)
     if ((buff & rst::Buffers::Color) == rst::Buffers::Color)
     {
         std::fill(frame_buf.begin(), frame_buf.end(), Eigen::Vector3f{0, 0, 0});
+        for (auto & v : MSAA_frame_buf) {
+            std::fill(v.begin(), v.end(), Eigen::Vector3f{0, 0, 0});
+        }
     }
     if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth)
     {
         std::fill(depth_buf.begin(), depth_buf.end(), std::numeric_limits<float>::infinity());
+        for (auto & v : MSAA_depth_buf) {
+            std::fill(v.begin(), v.end(), std::numeric_limits<float>::infinity());
+        }
     }
 }
 
-rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
+rst::rasterizer::rasterizer(int w, int h, int msaa) : width(w), height(h), MSAA_level(msaa)
 {
-    frame_buf.resize(w * h);
-    depth_buf.resize(w * h);
+    area = w * h;
+    frame_buf.resize(area);
+    depth_buf.resize(area);
+    MSAA_frame_buf.resize(area);
+    MSAA_depth_buf.resize(area);
+
+    if (MSAA_level < 1) {
+        MSAA_level = 1;
+    }
+    for (auto & v : MSAA_frame_buf) {
+        v.resize(MSAA_level * MSAA_level);
+    }
+    for (auto & v : MSAA_depth_buf) {
+        v.resize(MSAA_level * MSAA_level);
+    }
 }
 
 int rst::rasterizer::get_index(int i, int j)
@@ -213,8 +248,7 @@ int rst::rasterizer::get_index(int i, int j)
 
 void rst::rasterizer::set_pixel(const Eigen::Vector3f& point, const Eigen::Vector3f& color)
 {
-    auto ind = get_index((int)point.x(), (int)point.y());
-    frame_buf[ind] = color;
+    set_pixel((int)point.x(), (int)point.y(), color);
 }
 
 void rst::rasterizer::set_pixel(int i, int j, const Eigen::Vector3f& color)
@@ -223,20 +257,28 @@ void rst::rasterizer::set_pixel(int i, int j, const Eigen::Vector3f& color)
     frame_buf[ind] = color;
 }
 
+void rst::rasterizer::set_subpixel(int i, int j, int k, const Eigen::Vector3f& color)
+{
+    auto ind = get_index(i, j);
+    MSAA_frame_buf[ind][k] = color;
+}
+
+void rst::rasterizer::set_pixel_MSAA()
+{
+    auto norm = 1.f / (MSAA_level * MSAA_level);
+    for (int i = 0; i < area; ++i) {
+        frame_buf[i].setZero();
+        for (auto & col : MSAA_frame_buf[i]) {
+            frame_buf[i] += col;
+        }
+        frame_buf[i] *= norm;
+    }
+}
+
+
 bool rst::rasterizer::set_depth(const Eigen::Vector3f& point, float depth, bool compareZ)
 {
-    auto ind = get_index((int)point.x(), (int)point.y());
-    if (compareZ) {
-        if (depth < depth_buf[ind]) {
-            depth_buf[ind] = depth;
-            return 1;
-        }
-    }
-    else {
-        depth_buf[ind] = depth;
-        return 1;
-    }
-    return 0;
+    return set_depth((int)point.x(), (int)point.y(), depth, compareZ);
 }
 
 bool rst::rasterizer::set_depth(int i, int j, float depth, bool compareZ)
@@ -254,6 +296,41 @@ bool rst::rasterizer::set_depth(int i, int j, float depth, bool compareZ)
     }
     return 0;
 }
+
+bool rst::rasterizer::set_subpixel_depth(int i, int j, int k, float depth, bool compareZ)
+{
+    auto ind = get_index(i, j);
+    if (compareZ) {
+        if (depth < MSAA_depth_buf[ind][k]) {
+            MSAA_depth_buf[ind][k] = depth;
+            return 1;
+        }
+    }
+    else {
+        MSAA_depth_buf[ind][k] = depth;
+        return 1;
+    }
+    return 0;
+}
+
+void rst::rasterizer::set_depth_MSAA()
+{
+    std::fill(depth_buf.begin(), depth_buf.end(), 0.f);
+    for (int i = 0; i < area; ++i) {
+        int count = 0;
+        for (auto z : MSAA_depth_buf[i]) {
+            if (!std::isinf(z)) {
+                depth_buf[i] += z;
+                ++count;
+            }
+        }
+        if (count) {
+            depth_buf[i] /= count;
+        }
+    }
+}
+
+
 
 
 // clang-format on

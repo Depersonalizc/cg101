@@ -93,7 +93,11 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
 }
 
 int main(int argc, char* argv[])
-{
+{   
+    int width = 700;
+    int height = 700;
+    int msaa = 1;
+
     float rot_deg = 0.0;
     Eigen::Vector3f axis = {0, 0, 1};  // Z-axis
     
@@ -101,7 +105,7 @@ int main(int argc, char* argv[])
     std::string filename = "output.png";
 
     int opt;    
-    while ( (opt = getopt(argc, argv, "o::a:d:")) != -1 ) {
+    while ( (opt = getopt(argc, argv, "o::a:d:m:w:h:")) != -1 ) {
         switch (opt) {
             case 'o':  // output dir
                 write = true;
@@ -116,10 +120,20 @@ int main(int argc, char* argv[])
             case 'd':  // rotation angle, in degrees
                 rot_deg = std::stof(std::string(optarg));
                 break;
+            case 'm': // MSAA level
+                msaa = std::stoi(std::string(optarg));
+                break;
+            case 'w': // window width
+                width = std::stoi(std::string(optarg));
+                break;
+            case 'h': // window height
+                height = std::stoi(std::string(optarg));
+                break;
+
         }
     }
 
-    rst::rasterizer r(700, 700);
+    rst::rasterizer r(width, height, msaa);
 
     /* camera position */
     Eigen::Vector3f eye_pos = {0, 0, 5};
@@ -176,7 +190,7 @@ int main(int argc, char* argv[])
         r.set_projection(get_projection_matrix(45, 1, 0.1, 50));
 
         r.draw(pos_id, ind_id, col_id, rst::Primitive::Triangle);
-        cv::Mat image(700, 700, CV_32FC3, r.frame_buffer().data());
+        cv::Mat image(width, height, CV_32FC3, r.frame_buffer().data());
         image.convertTo(image, CV_8UC3, 1.0f);
         cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
 
@@ -196,7 +210,7 @@ int main(int argc, char* argv[])
 
         r.draw(pos_id, ind_id, col_id, rst::Primitive::Triangle);
         
-        cv::Mat image(700, 700, CV_32FC3, r.frame_buffer().data());
+        cv::Mat image(width, height, CV_32FC3, r.frame_buffer().data());
         image.convertTo(image, CV_8UC3, 1.0f);
         cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
         cv::imshow("image", image);
