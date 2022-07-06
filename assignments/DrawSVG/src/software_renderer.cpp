@@ -11,6 +11,14 @@ using namespace std;
 
 namespace CMU462 {
 
+// Utils
+bool on_left(Vector2D start, Vector2D dest, Vector2D p) {
+  auto sd = dest - start;
+  auto sp = p - start;
+  float cross = sp.x * sd.y - sp.y * sd.x;
+  // return true <-> neg cross <-> p is on the left of sd
+  return std::signbit(cross);
+}
 
 // Implements SoftwareRenderer //
 
@@ -220,6 +228,11 @@ void SoftwareRendererImp::draw_group( Group& group ) {
 // The input arguments in the rasterization functions 
 // below are all defined in screen space coordinates
 
+bool SoftwareRendererImp::inscreen(int sx, int sy) {
+  return (sx >= 0 && sx < target_w &&
+          sy >= 0 && sy < target_h);
+}
+
 void SoftwareRendererImp::rasterize_point( float x, float y, Color color ) {
 
   // fill in the nearest pixel
@@ -227,8 +240,7 @@ void SoftwareRendererImp::rasterize_point( float x, float y, Color color ) {
   int sy = (int) floor(y);
 
   // check bounds
-  if ( sx < 0 || sx >= target_w ) return;
-  if ( sy < 0 || sy >= target_h ) return;
+  if (!inscreen(sx, sy)) return;
 
   // fill sample - NOT doing alpha blending!
   render_target[4 * (sx + sy * target_w)    ] = (uint8_t) (color.r * 255);
@@ -244,6 +256,88 @@ void SoftwareRendererImp::rasterize_line( float x0, float y0,
 
   // Task 2: 
   // Implement line rasterization
+  // TODO: Wu's algorithm
+
+  /* Find nearest start/end pixels */
+  int sx0, sx1, sy0, sy1;
+  if (x0 < x1) {
+    sx0 = (int) x0;
+    sy0 = (int) y0;
+    sx1 = (int) x1;
+    sy1 = (int) y1;
+  } else {
+    sx0 = (int) x1;
+    sy0 = (int) y1;
+    sx1 = (int) x0;
+    sy1 = (int) y0;
+  }
+
+  int dx = sx1 - sx0;  // guaranteed non-neg
+  int dy = sy1 - sy0;
+  int sx = sx0;
+  int sy = sy0;
+
+  int ey = dx / 2;
+  int ex = dy / 2;
+  if (dy >= dx) {
+    /* steep down */
+    for (; sy <= sy1; sy++, ex += dx) {
+      // check bounds
+      if (ex >= dy) {
+        ex -= dy;
+        sx++;
+      }
+      if (inscreen(sx, sy)) {
+        render_target[4 * (sx + sy * target_w)    ] = (uint8_t) (color.r * 255);
+        render_target[4 * (sx + sy * target_w) + 1] = (uint8_t) (color.g * 255);
+        render_target[4 * (sx + sy * target_w) + 2] = (uint8_t) (color.b * 255);
+        render_target[4 * (sx + sy * target_w) + 3] = (uint8_t) (color.a * 255);        
+      }
+    }
+  } else if (dy < -dx) {
+    /* steep up */
+    for (; sy >= sy1; sy--, ex += dx) {
+      if (ex >= 0) {
+        ex += dy;
+        sx++;
+      }
+      if (inscreen(sx, sy)) {
+        render_target[4 * (sx + sy * target_w)    ] = (uint8_t) (color.r * 255);
+        render_target[4 * (sx + sy * target_w) + 1] = (uint8_t) (color.g * 255);
+        render_target[4 * (sx + sy * target_w) + 2] = (uint8_t) (color.b * 255);
+        render_target[4 * (sx + sy * target_w) + 3] = (uint8_t) (color.a * 255);        
+      }
+    }
+  } else if (dy >= 0) {
+    /* flat down */
+    for (; sx <= sx1; sx++, ey += dy) {
+      if (ey >= dx) {
+        ey -= dx;
+        sy++;
+      }
+      if (inscreen(sx, sy)) {
+        render_target[4 * (sx + sy * target_w)    ] = (uint8_t) (color.r * 255);
+        render_target[4 * (sx + sy * target_w) + 1] = (uint8_t) (color.g * 255);
+        render_target[4 * (sx + sy * target_w) + 2] = (uint8_t) (color.b * 255);
+        render_target[4 * (sx + sy * target_w) + 3] = (uint8_t) (color.a * 255);        
+      }
+    }
+  } else {
+    /* flat up */
+    for (; sx <= sx1; sx++, ey += dy) {
+      if (ey <= 0) {
+        ey += dx;
+        sy--;
+      }
+      if (inscreen(sx, sy)) {
+        render_target[4 * (sx + sy * target_w)    ] = (uint8_t) (color.r * 255);
+        render_target[4 * (sx + sy * target_w) + 1] = (uint8_t) (color.g * 255);
+        render_target[4 * (sx + sy * target_w) + 2] = (uint8_t) (color.b * 255);
+        render_target[4 * (sx + sy * target_w) + 3] = (uint8_t) (color.a * 255);        
+      }
+    }
+  }
+
 }
 
 void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
@@ -252,6 +346,123 @@ void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
                                               Color color ) {
   // Task 3: 
   // Implement triangle rasterization
+  static const int BSIZE = 4;
+
+  auto verts = vector<Vector2D> {Vector2D(x0, y0), Vector2D(x1, y1), Vector2D(x2, y2),};
+  
+  int sx0 = (int) x0;
+  int sy0 = (int) y0;
+  int sx1 = (int) x1;
+  int sy1 = (int) y1;
+  int sx2 = (int) x2;
+  int sy2 = (int) y2;
+  int sx_min = std::min({sx0, sx1, sx2});
+  int sx_max = std::max({sx0, sx1, sx2});
+  int sy_min = std::min({sy0, sy1, sy2});
+  int sy_max = std::max({sy0, sy1, sy2});
+  int pad_x = (BSIZE - 1) - ( (sx_max - sx_min) % BSIZE );
+  int pad_y = (BSIZE - 1) - ( (sy_max - sy_min) % BSIZE );
+
+  /* early in/out optimization w/ block size = 4 */
+  for (int sx = sx_min - pad_x; sx < sx_max; sx += BSIZE) {
+    for (int sy = sy_min - pad_y; sy < sy_max; sy += BSIZE) {
+      auto xl = sx + 0.5f;  // topleft : (sx, sy) + .5
+      auto yt = sy + 0.5f;
+      auto xr = xl + BSIZE - 1;  // botright: (sx, sy) + .5 + BSIZE-1
+      auto yb = yt + BSIZE - 1;
+      auto corners = std::vector<Vector2D> {
+        Vector2D(xl, yt), Vector2D(xr, yt), 
+        Vector2D(xr, yb), Vector2D(xl, yb),
+      };
+
+      bool leftside;
+      bool early_in = true;
+      bool early_out = false;
+      for (int i = 0; i < 3 && !early_out; i++) {
+        early_out = true;
+        for (auto & p : corners) {
+          leftside = on_left(verts[i], verts[(i+1)%3], p);
+          early_in  &= leftside;
+          early_out &= !leftside;
+        }
+      }
+
+      if (early_in) {
+        /* early in, fill all pixels. */
+        for (int _sx = sx; _sx < sx + BSIZE; _sx++) {
+          for (int _sy = sy; _sy < sy + BSIZE; _sy++) {
+            if (inscreen(_sx, _sy)) {
+              render_target[4 * (_sx + _sy * target_w)    ] = (uint8_t) (color.r * 255);
+              render_target[4 * (_sx + _sy * target_w) + 1] = (uint8_t) (color.g * 255);
+              render_target[4 * (_sx + _sy * target_w) + 2] = (uint8_t) (color.b * 255);
+              render_target[4 * (_sx + _sy * target_w) + 3] = (uint8_t) (color.a * 255);
+              // render_target[4 * (_sx + _sy * target_w)    ] = 0;
+              // render_target[4 * (_sx + _sy * target_w) + 1] = 255;
+              // render_target[4 * (_sx + _sy * target_w) + 2] = 0;
+              // render_target[4 * (_sx + _sy * target_w) + 3] = 255;
+            }
+          }
+        }
+      }
+      // else if (early_out) {
+      //   for (int _sx = sx; _sx < sx + BSIZE; _sx++) {
+      //     for (int _sy = sy; _sy < sy + BSIZE; _sy++) {
+      //       // render_target[4 * (_sx + _sy * target_w)    ] = (uint8_t) (color.r * 255);
+      //       // render_target[4 * (_sx + _sy * target_w) + 1] = (uint8_t) (color.g * 255);
+      //       // render_target[4 * (_sx + _sy * target_w) + 2] = (uint8_t) (color.b * 255);
+      //       // render_target[4 * (_sx + _sy * target_w) + 3] = (uint8_t) (color.a * 255);
+      //       render_target[4 * (_sx + _sy * target_w)    ] = 255;
+      //       render_target[4 * (_sx + _sy * target_w) + 1] = 0;
+      //       render_target[4 * (_sx + _sy * target_w) + 2] = 0;
+      //       render_target[4 * (_sx + _sy * target_w) + 3] = 255;
+      //     }
+      //   }
+      // }
+      else if (!early_out) {
+        /* partially in, need to check all pixels. */
+        for (int _sx = sx; _sx < sx + BSIZE; _sx++) {
+          for (int _sy = sy; _sy < sy + BSIZE; _sy++) {
+            if (!inscreen(_sx, _sy)) continue;
+            if (inside(x0, y0, x1, y1, x2, y2, _sx + 0.5f, _sy + 0.5f)) {
+              render_target[4 * (_sx + _sy * target_w)    ] = (uint8_t) (color.r * 255);
+              render_target[4 * (_sx + _sy * target_w) + 1] = (uint8_t) (color.g * 255);
+              render_target[4 * (_sx + _sy * target_w) + 2] = (uint8_t) (color.b * 255);
+              render_target[4 * (_sx + _sy * target_w) + 3] = (uint8_t) (color.a * 255);
+              // render_target[4 * (_sx + _sy * target_w)    ] = 0;
+              // render_target[4 * (_sx + _sy * target_w) + 1] = 0;
+              // render_target[4 * (_sx + _sy * target_w) + 2] = 255;
+              // render_target[4 * (_sx + _sy * target_w) + 3] = 255;
+            } 
+            // else {
+            //   render_target[4 * (_sx + _sy * target_w)    ] = 255;
+            //   render_target[4 * (_sx + _sy * target_w) + 1] = 255;
+            //   render_target[4 * (_sx + _sy * target_w) + 2] = 0;
+            //   render_target[4 * (_sx + _sy * target_w) + 3] = 255;
+            // }
+          }
+        }
+      }
+    }
+  }
+
+  // /* Brute force within bbox */
+  // for (int sx = sx_min; sx <= sx_max; sx++) {
+  //   for (int sy = sy_min; sy <= sy_max; sy++) {
+  //     // topleft : (sx, sy) + .5
+  //     // botright: (sx, sy) + .5 + BSIZE-1
+  //     auto p = Vector2D(sx + .5, sy + .5);
+  //     bool early_in = true;
+  //     for (int i = 0; i < 3; i++)
+  //       early_in &= on_left(verts[i], verts[(i+1)%3], p);
+  //     if (early_in)
+  //     {
+  //       render_target[4 * (sx + sy * target_w)    ] = (uint8_t) (color.r * 255);
+  //       render_target[4 * (sx + sy * target_w) + 1] = (uint8_t) (color.g * 255);
+  //       render_target[4 * (sx + sy * target_w) + 2] = (uint8_t) (color.b * 255);
+  //       render_target[4 * (sx + sy * target_w) + 3] = (uint8_t) (color.a * 255);
+  //     }
+  //   }
+  // }
 
 }
 

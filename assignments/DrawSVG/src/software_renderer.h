@@ -111,6 +111,9 @@ class SoftwareRendererImp : public SoftwareRenderer {
 
   // Rasterization //
 
+  // whether point is within screen space
+  bool inscreen(int sx, int sy);
+
   // rasterize a point
   void rasterize_point( float x, float y, Color color );
 
